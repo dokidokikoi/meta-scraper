@@ -150,13 +150,13 @@ func (gc *GetChu) GetItemPreview(node *goquery.Document) ([]string, error) {
 
 func (gc *GetChu) GetItemGenre(node *goquery.Document) ([]string, error) {
 	str := tools.Jp2Utf8([]byte(node.Find("#soft_table tr:nth-child(2) table tr:nth-child(5) td:nth-child(2)").
-		Text()))
+		Eq(0).Text()))
 	return []string{str}, nil
 }
 
 func (gc *GetChu) GetItemBrand(node *goquery.Document) (string, error) {
 	brand := node.Find("#soft_table tr:nth-child(2) table tr:nth-child(1) td:nth-child(2) a:nth-child(1)").
-		Text()
+		Eq(0).Text()
 	str := tools.Jp2Utf8([]byte(brand))
 	return str, nil
 }
