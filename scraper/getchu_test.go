@@ -26,7 +26,7 @@ func TestName(t *testing.T) {
 }
 
 func TestGetChu_GetItem(t *testing.T) {
-	item, err := GetChuScraper.GetItem("https://www.getchu.com/soft.phtml?id=1219845c&gc=gc")
+	item, err := GetChuScraper.GetItem("https://www.getchu.com/soft.phtml?id=1228993&gc=gc")
 	if err != nil {
 		fmt.Println(err)
 		return

@@ -133,6 +133,18 @@ func (gc *GetChu) GetItemPreview(node *goquery.Document) ([]string, error) {
 			images = append(images, tools.AbsImage(gc.Domain, image))
 		}
 	})
+
+	node.Find("div.tabletitle").Each(func(i int, selection *goquery.Selection) {
+		title := tools.Jp2Utf8([]byte(selection.Text()))
+		if strings.Contains(title, "サンプル画像") {
+			selection.Next().Find("a").Each(func(i int, a *goquery.Selection) {
+				if image, ok := a.Attr("href"); ok {
+					// 解析基本链接和相对链接
+					images = append(images, tools.AbsImage(gc.Domain, image))
+				}
+			})
+		}
+	})
 	return images, nil
 }
 
@@ -155,7 +167,7 @@ func (gc *GetChu) GetItemReleaseDate(node *goquery.Document) (string, error) {
 }
 
 func (gc *GetChu) GetItemLink(node *goquery.Document) (string, error) {
-	link, ok := node.Find("#soft_table tr:nth-child(2) table tr:nth-child(4) td:nth-child(2) a:nth-child(1)").
+	link, ok := node.Find("#soft_table tr:nth-child(2) table tr:nth-child(1) td:nth-child(2) a:nth-child(1)").
 		Attr("href")
 	if !ok {
 		return "", nil
@@ -164,28 +176,42 @@ func (gc *GetChu) GetItemLink(node *goquery.Document) (string, error) {
 }
 
 func (gc *GetChu) GetItemStory(node *goquery.Document) (string, error) {
-	str := tools.Jp2Utf8([]byte(node.Find("div.tablebody").First().Text()))
-	return strings.TrimSpace(str), nil
+	var story string
+	node.Find("div.tabletitle").Each(func(i int, selection *goquery.Selection) {
+		title := tools.Jp2Utf8([]byte(selection.Text()))
+		if strings.Contains(title, "ストーリー") {
+			story = tools.Jp2Utf8([]byte(selection.Next().Text()))
+			return
+		}
+	})
+	return strings.TrimSpace(story), nil
 }
 
 func (gc *GetChu) GetItemCharacter(node *goquery.Document) ([]Character, error) {
-	trs := node.Find(`table[border="0"][style="width: 100%;padding: 5px;"] tr`)
 	var character []Character
-	trs.Each(func(i int, selection *goquery.Selection) {
-		if selection.Find("hr").Length() > 0 {
+	node.Find("div.tabletitle").Each(func(i int, selection *goquery.Selection) {
+		title := tools.Jp2Utf8([]byte(selection.Text()))
+		if strings.Contains(title, "キャラクター") {
+			trs := selection.Next().Find(`tr`)
+			trs.Each(func(i int, selection *goquery.Selection) {
+				if selection.Find("hr").Length() > 0 {
+					return
+				}
+				avatar, _ := selection.Find("td:nth-child(1) img").Attr("src")
+				name := tools.Jp2Utf8([]byte(selection.Find("td:nth-child(2) h2.chara-name").Text()))
+				introduction := tools.Jp2Utf8([]byte(selection.Find("td:nth-child(2) dd").Text()))
+				image, _ := selection.Find("td:nth-child(3) img").Attr("src")
+				character = append(character, Character{
+					Name:         name,
+					Introduction: introduction,
+					Avatar:       tools.AbsImage(gc.Domain, avatar),
+					Images:       []string{tools.AbsImage(gc.Domain, image)},
+				})
+			})
 			return
 		}
-		avatar, _ := selection.Find("td:nth-child(1) img").Attr("src")
-		name := tools.Jp2Utf8([]byte(selection.Find("td:nth-child(2) h2.chara-name").Text()))
-		introduction := tools.Jp2Utf8([]byte(selection.Find("td:nth-child(2) dd").Text()))
-		image, _ := selection.Find("td:nth-child(3) img").Attr("src")
-		character = append(character, Character{
-			Name:         name,
-			Introduction: introduction,
-			Avatar:       tools.AbsImage(gc.Domain, avatar),
-			Images:       []string{tools.AbsImage(gc.Domain, image)},
-		})
 	})
+
 	return character, nil
 }
 

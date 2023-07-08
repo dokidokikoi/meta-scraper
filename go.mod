@@ -17,7 +17,6 @@ require (
 	github.com/gobwas/ws v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/sekimura/go-normalize-url v0.0.0-20150113070447-c2b8a31b72ab // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	golang.org/x/net v0.7.0 // indirect
