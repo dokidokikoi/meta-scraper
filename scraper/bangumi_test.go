@@ -1,11 +1,11 @@
-package main
+package scraper
 
 import (
 	"fmt"
-	"scraper/scraper"
+	"testing"
 )
 
-func main() {
+func TestBangumi_DoReq(t *testing.T) {
 	type Filter struct {
 		Nfsw bool `json:"nfsw"`
 	}
@@ -18,9 +18,18 @@ func main() {
 		Sort:    "rank",
 		Filter:  Filter{Nfsw: true},
 	}
-	data, err := scraper.BangumiScraper.DoReq("POST", "https://api.bgm.tv/v0/search/subjects", &body)
+	data, err := BangumiScraper.DoReq("POST", "https://api.bgm.tv/v0/search/subjects", &body)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println(string(data))
+}
+
+func TestBangumi_GetItem(t *testing.T) {
+	item, err := BangumiScraper.GetItem("https://api.bgm.tv/v0/subjects/432980")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Printf("%+v\n", item)
 }
