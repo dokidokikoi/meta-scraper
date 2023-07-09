@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"github.com/tidwall/gjson"
 	"scraper/tools"
+	"strings"
+	"sync"
 )
 
 var (
@@ -35,26 +37,6 @@ func (b *Bangumi) DoReq(method, uri string, body interface{}) ([]byte, error) {
 	return data, err
 }
 
-//		proxy       string
-//		Name        string      // 名称
-//		Cover       string      // 封面
-//		Preview     []string    // 预览图
-//		Tags        []Tag       // 标签
-//		Brand       string      // 品牌
-//		ReleaseDate string      // 发售日
-//		Link        string      // 官网
-//		Information []string    // 介绍页面
-//		SaveData    string      // 存档
-//		WalkThrough string      // 攻略
-//		Size        string      // 大小（仅供参考）
-//		Magnet      string      // 磁力链接
-//		BtFile      string      // bt 种子
-//		OtherInfo   string      // 其它信息
-//		Origin      string      // 来源网站
-//		Character   []Character // 角色
-//		Genre       []string    // 类别
-//		Story       string      // 故事简介
-//	}
 func (b *Bangumi) GetItem(uri string) (*Item, error) {
 	data, err := b.DoReq("GET", uri, nil)
 	if err != nil {
@@ -92,6 +74,11 @@ func (b *Bangumi) GetItem(uri string) (*Item, error) {
 	if err != nil {
 		fmt.Println("获取官网链接失败 url:", uri, "err:", err)
 	}
+	// 获取tag
+	item.Tags, err = b.GetItemTags(data)
+	if err != nil {
+		fmt.Println("获取tag失败 url:", uri, "err:", err)
+	}
 	// 获取故事简介链接
 	item.Story, err = b.GetItemStory(data)
 	if err != nil {
@@ -126,7 +113,7 @@ func (b *Bangumi) GetItemGenre(data []byte) ([]string, error) {
 
 func (b *Bangumi) GetItemBrand(data []byte) (string, error) {
 	for _, info := range gjson.GetBytes(data, "infobox").Array() {
-		if info.Get("key").String() == "开发" {
+		if strings.Contains(info.Get("key").String(), "开发") {
 			return info.Get("value").String(), nil
 		}
 	}
@@ -163,23 +150,50 @@ func (b Bangumi) GetItemCharacter(id string) ([]Character, []error) {
 		return nil, append(errs, fmt.Errorf("发送获取角色请求失败 err %v", err))
 	}
 
-	for _, c := range gjson.ParseBytes(data).Array() {
-		cid := c.Get("id").String()
-		if cid != "" {
-			data, err = b.DoReq("GET", fmt.Sprintf("https://api.bgm.tv/v0/characters/%s", cid), nil)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
-
-			characters = append(characters, Character{
-				Name:         gjson.GetBytes(data, "name").String(),
-				Introduction: gjson.GetBytes(data, "summary").String(),
-				Avatar:       gjson.GetBytes(data, "images.large").String(),
-			})
+	var lock sync.Mutex
+	wait := sync.WaitGroup{}
+	for i, c := range gjson.ParseBytes(data).Array() {
+		if i >= 10 {
+			break
 		}
+		cid := c.Get("id").String()
+
+		if cid != "" {
+			wait.Add(1)
+			go func(cid string) {
+				data, err = b.DoReq("GET", fmt.Sprintf("https://api.bgm.tv/v0/characters/%s", cid), nil)
+				if err != nil {
+					errs = append(errs, err)
+					return
+				}
+
+				lock.Lock()
+				characters = append(characters, Character{
+					Name:         gjson.GetBytes(data, "name").String(),
+					Introduction: gjson.GetBytes(data, "summary").String(),
+					Avatar:       gjson.GetBytes(data, "images.large").String(),
+				})
+				lock.Unlock()
+				wait.Done()
+			}(cid)
+		}
+
 	}
+	wait.Wait()
 	return characters, errs
+}
+
+func (b *Bangumi) GetItemTags(data []byte) ([]Tag, error) {
+	var tags []TagItem
+	for _, t := range gjson.GetBytes(data, "tags").Array() {
+		name := t.Get("name").String()
+		tags = append(tags, TagItem{
+			Identity: name,
+			Name:     name,
+		})
+	}
+
+	return []Tag{{Item: tags}}, nil
 }
 
 func init() {

@@ -26,7 +26,7 @@ func TestBangumi_DoReq(t *testing.T) {
 }
 
 func TestBangumi_GetItem(t *testing.T) {
-	item, err := BangumiScraper.GetItem("https://api.bgm.tv/v0/subjects/432980")
+	item, err := BangumiScraper.GetItem("https://api.bgm.tv/v0/subjects/226254")
 	if err != nil {
 		fmt.Println(err)
 		return
