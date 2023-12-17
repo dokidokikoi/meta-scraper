@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	bangumiToken     = ""
+	bangumiToken     = "HQ0i2YxrfBErFThGbAeXk3d9JYqqdv4pewIyDqYc"
 	bangumiUserAgent = "dokidokikoi/meta-scraper (https://github.com/dokidokikoi/meta-scraper)"
 
 	BangumiDomain = "https://api.bgm.tv/"
